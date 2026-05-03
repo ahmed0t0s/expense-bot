@@ -16,6 +16,7 @@
     "canvas": "^3.2.3",
     "chart.js": "^4.5.1",
     "chartjs-node-canvas": "^5.0.0",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "node-telegram-bot-api": "^0.67.0"

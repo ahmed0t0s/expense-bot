@@ -1,10 +1,15 @@
 const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
+const ChartDataLabels = require("chartjs-plugin-datalabels");
 const db = require("./db");
 
 const width = 500;
 const height = 500;
 
-const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height });
+const chartJSNodeCanvas = new ChartJSNodeCanvas({
+    width,
+    height,
+    plugins: [ChartDataLabels]
+});
 
 async function generateChart(chatId, bot) {
     const rows = db.prepare("SELECT * FROM expenses").all();
@@ -21,11 +26,6 @@ async function generateChart(chatId, bot) {
         else if (r.category === "rent") rent += amount;
     });
 
-    // لو مفيش بيانات
-    if (food === 0 && transport === 0 && rent === 0) {
-        return bot.sendMessage(chatId, "مفيش بيانات لسه 📭 ابدأ سجّل مصاريف الأول");
-    }
-
     const config = {
         type: "pie",
         data: {
@@ -33,13 +33,26 @@ async function generateChart(chatId, bot) {
             datasets: [{
                 data: [food, transport, rent]
             }]
-        }
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    color: "#fff",
+                    font: {
+                        weight: "bold",
+                        size: 16
+                    },
+                    formatter: (value) => value > 0 ? value : ""
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
     };
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
     await bot.sendPhoto(chatId, image, {
-        caption: `📊 توزيع المصاريف:
+        caption: `📊 المصاريف:
 🍔 أكل: ${food}
 🚕 مواصلات: ${transport}
 🏠 إيجار: ${rent}`
