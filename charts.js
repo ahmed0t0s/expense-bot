@@ -2,8 +2,8 @@ const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
 const db = require("./db");
 
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
-    width: 500,
-    height: 500
+    width: 600,
+    height: 400
 });
 
 async function generateChart(chatId, bot) {
@@ -28,17 +28,23 @@ async function generateChart(chatId, bot) {
     }
 
     const config = {
-        type: "pie",
+        type: "bar",
         data: {
-            labels: ["Food", "Transport", "Rent"],
+            labels: ["🍔 Food", "🚕 Transport", "🏠 Rent"],
             datasets: [{
+                label: "المصاريف",
                 data: [food, transport, rent]
             }]
         },
         options: {
             plugins: {
                 legend: {
-                    display: true
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
             }
         }
@@ -46,14 +52,13 @@ async function generateChart(chatId, bot) {
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
-    // 📊 هنا الأرقام تظهر بشكل مضمون (مش داخل الرسم)
     await bot.sendPhoto(chatId, image, {
         caption:
 `📊 تقرير المصاريف:
 
-🍔 أكل: ${food} (${((food/total)*100).toFixed(1)}%)
-🚕 مواصلات: ${transport} (${((transport/total)*100).toFixed(1)}%)
-🏠 إيجار: ${rent} (${((rent/total)*100).toFixed(1)}%)
+🍔 أكل: ${food}
+🚕 مواصلات: ${transport}
+🏠 إيجار: ${rent}
 
 💰 الإجمالي: ${total}`
     });
