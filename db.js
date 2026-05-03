@@ -1,8 +1,9 @@
-const sqlite3 = require("sqlite3").verbose();
+const Database = require("better-sqlite3");
 
-const db = new sqlite3.Database("expenses.db");
+const db = new Database("expenses.db");
 
-db.run(`
+// إنشاء الجدول
+db.exec(`
 CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     amount INTEGER,

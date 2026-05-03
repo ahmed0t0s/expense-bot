@@ -32,9 +32,9 @@ bot.on("message", (msg) => {
     else if (text.includes("اكل") || text.includes("أكل")) category = "food";
     else if (text.includes("ايجار")) category = "rent";
 
-    db.run(
-        "INSERT INTO expenses (amount, category, text) VALUES (?, ?, ?)",
-        [amount, category, text]
+    db.prepare(
+    "INSERT INTO expenses (amount, category, text) VALUES (?, ?, ?)"
+).run(amount, category, text);
     );
 
     bot.sendMessage(chatId, `تم تسجيل 💰 ${amount} في ${category}`);
@@ -66,8 +66,7 @@ function sendReport(chatId) {
 }
 
 function exportExcel(chatId) {
-    db.all("SELECT * FROM expenses", [], async (err, rows) => {
-        if (err) return;
+    const rows = db.prepare("SELECT * FROM expenses").all();
 
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet("Expenses");
