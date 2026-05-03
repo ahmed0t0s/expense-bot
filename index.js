@@ -13,29 +13,35 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 console.log("Bot started...");
 
-// =====================
-// 🤖 TELEGRAM BOT
-// =====================
+// ================= BOT =================
 bot.on("message", (msg) => {
     const chatId = msg.chat.id;
     const text = (msg.text || "").toLowerCase();
 
-    // 📊 انفوجراف
-    if (text.includes("انفوجراف") || text.includes("chart")) {
-        return generateChart(chatId, bot);
+    // تسجيل المستخدم
+    db.prepare(`
+        INSERT OR IGNORE INTO users (telegram_id)
+        VALUES (?)
+    `).run(chatId);
+
+    const user = db.prepare(
+        "SELECT id FROM users WHERE telegram_id = ?"
+    ).get(chatId);
+
+    const userId = user.id;
+
+    if (text.includes("انفوجراف")) {
+        return generateChart(chatId, bot, userId);
     }
 
-    // 📁 Excel
     if (text.includes("excel")) {
-        return exportExcel(chatId);
+        return exportExcel(chatId, userId);
     }
 
-    // 📊 تقرير
     if (text.includes("تقرير")) {
-        return sendReport(chatId);
+        return sendReport(chatId, userId);
     }
 
-    // استخراج رقم
     const amountMatch = text.match(/\d+/);
     if (!amountMatch) {
         return bot.sendMessage(chatId, "اكتب: دفعت 200 بنزين");
@@ -43,41 +49,33 @@ bot.on("message", (msg) => {
 
     const amount = Number(amountMatch[0]);
 
-    // تصنيف
     let category = "other";
     if (text.includes("بنزين")) category = "transport";
     else if (text.includes("اكل") || text.includes("أكل")) category = "food";
     else if (text.includes("ايجار")) category = "rent";
 
-    console.log("INSERT:", amount, category, text);
+    db.prepare(`
+        INSERT INTO expenses (user_id, amount, category, text)
+        VALUES (?, ?, ?, ?)
+    `).run(userId, amount, category, text);
 
-    db.prepare(
-        "INSERT INTO expenses (amount, category, text) VALUES (?, ?, ?)"
-    ).run(amount, category, text);
-
-    bot.sendMessage(chatId, `تم تسجيل 💰 ${amount} في ${category}`);
+    bot.sendMessage(chatId, `تم تسجيل 💰 ${amount}`);
 });
 
+// ================= REPORT =================
+function sendReport(chatId, userId) {
+    const rows = db.prepare(
+        "SELECT * FROM expenses WHERE user_id = ?"
+    ).all(userId);
 
-// =====================
-// 📊 REPORT
-// =====================
-function sendReport(chatId) {
-    const rows = db.prepare("SELECT * FROM expenses").all();
-
-    let total = 0;
-    let food = 0;
-    let transport = 0;
-    let rent = 0;
+    let total = 0, food = 0, transport = 0, rent = 0;
 
     rows.forEach(r => {
-        const amount = Number(r.amount) || 0;
-
-        total += amount;
-
-        if (r.category === "food") food += amount;
-        else if (r.category === "transport") transport += amount;
-        else if (r.category === "rent") rent += amount;
+        const a = Number(r.amount) || 0;
+        total += a;
+        if (r.category === "food") food += a;
+        if (r.category === "transport") transport += a;
+        if (r.category === "rent") rent += a;
     });
 
     bot.sendMessage(chatId,
@@ -87,15 +85,14 @@ function sendReport(chatId) {
 🚕 مواصلات: ${transport}
 🏠 إيجار: ${rent}
 
-💰 إجمالي: ${total}`);
+💰 الإجمالي: ${total}`);
 }
 
-
-// =====================
-// 📁 EXPORT EXCEL
-// =====================
-async function exportExcel(chatId) {
-    const rows = db.prepare("SELECT * FROM expenses").all();
+// ================= EXCEL =================
+async function exportExcel(chatId, userId) {
+    const rows = db.prepare(
+        "SELECT * FROM expenses WHERE user_id = ?"
+    ).all(userId);
 
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Expenses");
@@ -104,121 +101,76 @@ async function exportExcel(chatId) {
         { header: "Amount", key: "amount" },
         { header: "Category", key: "category" },
         { header: "Text", key: "text" },
-        { header: "Date", key: "date" },
+        { header: "Date", key: "date" }
     ];
 
     rows.forEach(r => sheet.addRow(r));
 
-    const file = "expenses.xlsx";
-    await workbook.xlsx.writeFile(file);
+    await workbook.xlsx.writeFile("expenses.xlsx");
 
-    bot.sendMessage(chatId, "تم تجهيز Excel 📁");
+    bot.sendMessage(chatId, "📁 Excel جاهز");
 }
 
-
-// =====================
-// 🌐 WEB DASHBOARD
-// =====================
+// ================= WEB =================
 app.get("/", (req, res) => {
-    res.send("Bot is running 🚀");
+    res.send("Bot running 🚀");
 });
 
+app.get("/dashboard/:id", (req, res) => {
+    const userId = req.params.id;
 
-app.get("/dashboard", (req, res) => {
-    const rows = db.prepare("SELECT * FROM expenses").all();
+    const rows = db.prepare(
+        "SELECT * FROM expenses WHERE user_id = ?"
+    ).all(userId);
 
-    let food = 0;
-    let transport = 0;
-    let rent = 0;
+    let food = 0, transport = 0, rent = 0;
 
     rows.forEach(r => {
-        const amount = Number(r.amount) || 0;
-
-        if (r.category === "food") food += amount;
-        else if (r.category === "transport") transport += amount;
-        else if (r.category === "rent") rent += amount;
+        const a = Number(r.amount) || 0;
+        if (r.category === "food") food += a;
+        if (r.category === "transport") transport += a;
+        if (r.category === "rent") rent += a;
     });
 
     const total = food + transport + rent;
 
     res.send(`
-<!DOCTYPE html>
 <html>
 <head>
-    <title>Expense Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        body {
-            font-family: Arial;
-            text-align: center;
-            background: #f4f4f4;
-        }
-        .box {
-            display: inline-block;
-            margin: 15px;
-            padding: 15px;
-            background: white;
-            border-radius: 10px;
-            width: 180px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-    </style>
+<title>Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial;text-align:center;background:#f4f4f4}
+.box{display:inline-block;margin:10px;padding:15px;background:#fff;border-radius:10px}
+</style>
 </head>
 
 <body>
 
-<h1>📊 Expense Dashboard</h1>
+<h1>📊 Dashboard</h1>
 
-<div class="box">🍔 Food<br><b>${food}</b></div>
-<div class="box">🚕 Transport<br><b>${transport}</b></div>
-<div class="box">🏠 Rent<br><b>${rent}</b></div>
-<div class="box">💰 Total<br><b>${total}</b></div>
+<div class="box">🍔 ${food}</div>
+<div class="box">🚕 ${transport}</div>
+<div class="box">🏠 ${rent}</div>
+<div class="box">💰 ${total}</div>
 
-<canvas id="chart" width="400" height="400"></canvas>
+<canvas id="c"></canvas>
 
 <script>
-const data = {
-    labels: [
-        "🍔 Food (${food})",
-        "🚕 Transport (${transport})",
-        "🏠 Rent (${rent})"
-    ],
-    datasets: [{
-        data: [${food}, ${transport}, ${rent}],
-        backgroundColor: ["#ff6384", "#36a2eb", "#ffce56"]
-    }]
-};
-
-new Chart(document.getElementById("chart"), {
-    type: "pie",
-    data: data,
-    options: {
-        plugins: {
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return context.label + ": " + context.raw;
-                    }
-                }
-            },
-            legend: {
-                position: "bottom"
-            }
-        }
-    }
+new Chart(document.getElementById("c"),{
+type:"pie",
+data:{
+labels:["Food","Transport","Rent"],
+datasets:[{data:[${food},${transport},${rent}]}]
+}
 });
 </script>
 
 </body>
 </html>
-    `);
+`);
 });
 
-
-// =====================
-// 🚀 START SERVER
-// =====================
 app.listen(PORT, () => {
-    console.log("Web Dashboard running on port", PORT);
+    console.log("Server running...");
 });

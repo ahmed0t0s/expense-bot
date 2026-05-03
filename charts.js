@@ -3,7 +3,6 @@ const { registerFont } = require("canvas");
 const ChartDataLabels = require("chartjs-plugin-datalabels");
 const db = require("./db");
 
-// تسجيل الخط العربي
 registerFont("./fonts/Cairo-Regular.ttf", { family: "Cairo" });
 
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
@@ -12,20 +11,18 @@ const chartJSNodeCanvas = new ChartJSNodeCanvas({
     chartCallback: (ChartJS) => {
         ChartJS.register(ChartDataLabels);
         ChartJS.defaults.font.family = "Cairo";
-        ChartJS.defaults.font.size = 16;
     }
 });
 
-async function generateChart(chatId, bot) {
-    const rows = db.prepare("SELECT * FROM expenses").all();
+async function generateChart(chatId, bot, userId) {
+    const rows = db.prepare(
+        "SELECT * FROM expenses WHERE user_id = ?"
+    ).all(userId);
 
-    let food = 0;
-    let transport = 0;
-    let rent = 0;
+    let food = 0, transport = 0, rent = 0;
 
     rows.forEach(r => {
         const amount = Number(r.amount) || 0;
-
         if (r.category === "food") food += amount;
         else if (r.category === "transport") transport += amount;
         else if (r.category === "rent") rent += amount;
@@ -34,7 +31,7 @@ async function generateChart(chatId, bot) {
     const total = food + transport + rent;
 
     if (total === 0) {
-        return bot.sendMessage(chatId, "مفيش بيانات لسه 📭");
+        return bot.sendMessage(chatId, "مفيش بيانات 📭");
     }
 
     const config = {
@@ -47,33 +44,25 @@ async function generateChart(chatId, bot) {
             }]
         },
         options: {
-    plugins: {
-        legend: {
-            position: "bottom",
-            labels: {
-                font: {
-                    family: "Cairo",
-                    size: 16
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        font: { family: "Cairo", size: 16 },
+                        textDirection: "rtl"
+                    }
                 },
-                textDirection: "rtl"
-            }
-        },
-        datalabels: {
-            color: "#fff",
-            font: {
-                weight: "bold",
-                size: 18
-            },
-            formatter: (value) => {
-                const percentage = ((value / total) * 100).toFixed(1);
-                return value > 0 ? value + " (" + percentage + "%)" : "";
+                datalabels: {
+                    color: "#fff",
+                    font: { weight: "bold", size: 18 },
+                    formatter: (value) => {
+                        const p = ((value / total) * 100).toFixed(1);
+                        return value ? value + " (" + p + "%)" : "";
+                    }
+                }
             }
         }
-    },
-    layout: {
-        padding: 20
-    }
-}
+    };
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
