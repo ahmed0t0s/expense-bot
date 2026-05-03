@@ -40,10 +40,13 @@ bot.on("message", (msg) => {
     else if (text.includes("اكل") || text.includes("أكل")) category = "food";
     else if (text.includes("ايجار")) category = "rent";
 
+    console.log("INSERT:", amount, category, text);
+
     const stmt = db.prepare(
         "INSERT INTO expenses (amount, category, text) VALUES (?, ?, ?)"
     );
-    stmt.run(amount, category, text);
+
+    stmt.run(Number(amount), category, text);
 
     bot.sendMessage(chatId, `تم تسجيل 💰 ${amount} في ${category}`);
 });
@@ -58,10 +61,10 @@ function sendReport(chatId) {
     let rent = 0;
 
     rows.forEach(r => {
-        total += r.amount;
-        if (r.category === "food") food += r.amount;
-        if (r.category === "transport") transport += r.amount;
-        if (r.category === "rent") rent += r.amount;
+        total += Number(r.amount);
+        if (r.category === "food") food += Number(r.amount);
+        if (r.category === "transport") transport += Number(r.amount);
+        if (r.category === "rent") rent += Number(r.amount);
     });
 
     bot.sendMessage(chatId,

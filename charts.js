@@ -14,15 +14,22 @@ async function generateChart(chatId, bot) {
     let rent = 0;
 
     rows.forEach(r => {
-        if (r.category === "food") food += r.amount;
-        else if (r.category === "transport") transport += r.amount;
-        else if (r.category === "rent") rent += r.amount;
+        const amount = Number(r.amount) || 0;
+
+        if (r.category === "food") food += amount;
+        else if (r.category === "transport") transport += amount;
+        else if (r.category === "rent") rent += amount;
     });
+
+    // لو مفيش بيانات
+    if (food === 0 && transport === 0 && rent === 0) {
+        return bot.sendMessage(chatId, "مفيش بيانات لسه 📭 ابدأ سجّل مصاريف الأول");
+    }
 
     const config = {
         type: "pie",
         data: {
-            labels: ["Food", "Transport", "Rent"],
+            labels: ["🍔 Food", "🚕 Transport", "🏠 Rent"],
             datasets: [{
                 data: [food, transport, rent]
             }]
@@ -32,7 +39,10 @@ async function generateChart(chatId, bot) {
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
     await bot.sendPhoto(chatId, image, {
-        caption: "📊 توزيع المصاريف"
+        caption: `📊 توزيع المصاريف:
+🍔 أكل: ${food}
+🚕 مواصلات: ${transport}
+🏠 إيجار: ${rent}`
     });
 }
 
