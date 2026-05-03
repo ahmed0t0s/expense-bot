@@ -43,34 +43,37 @@ async function generateChart(chatId, bot) {
             labels: ["🍔 أكل", "🚕 مواصلات", "🏠 إيجار"],
             datasets: [{
                 data: [food, transport, rent],
-                backgroundColor: ["#ff6384", "#36a2eb", "#ffce56"]
+                backgroundColor: ["#ff4d6d", "#4dabf7", "#ffd43b"]
             }]
         },
         options: {
-            plugins: {
-                legend: {
-                    position: "bottom",
-                    labels: {
-                        font: {
-                            family: "Cairo",
-                            size: 16
-                        }
-                    }
+    plugins: {
+        legend: {
+            position: "bottom",
+            labels: {
+                font: {
+                    family: "Cairo",
+                    size: 16
                 },
-                datalabels: {
-                    color: "#fff",
-                    font: {
-                        weight: "bold",
-                        size: 18
-                    },
-                    formatter: (value) => {
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return value > 0 ? value + " (" + percentage + "%)" : "";
-                    }
-                }
+                textDirection: "rtl"
+            }
+        },
+        datalabels: {
+            color: "#fff",
+            font: {
+                weight: "bold",
+                size: 18
+            },
+            formatter: (value) => {
+                const percentage = ((value / total) * 100).toFixed(1);
+                return value > 0 ? value + " (" + percentage + "%)" : "";
             }
         }
-    };
+    },
+    layout: {
+        padding: 20
+    }
+}
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
