@@ -27,41 +27,44 @@ async function generateChart(chatId, bot) {
         return bot.sendMessage(chatId, "مفيش بيانات مصاريف لسه 📭");
     }
 
+    // 📊 الرسم (بدون أرقام)
     const config = {
         type: "bar",
         data: {
-            labels: ["🍔 Food", "🚕 Transport", "🏠 Rent"],
+            labels: ["Food", "Transport", "Rent"],
             datasets: [{
-                label: "المصاريف",
-                data: [food, transport, rent]
+                data: [food, transport, rent],
+                backgroundColor: ["#ff6384", "#36a2eb", "#ffce56"]
             }]
         },
         options: {
             plugins: {
-                legend: {
-                    display: false
-                }
+                legend: { display: false }
             },
             scales: {
-                y: {
-                    beginAtZero: true
-                }
+                y: { beginAtZero: true }
             }
         }
     };
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
-    await bot.sendPhoto(chatId, image, {
-        caption:
-`📊 تقرير المصاريف:
+    // 📱 الأرقام هنا (مضمون 100%)
+    const caption =
+`📊 المصاريف:
 
 🍔 أكل: ${food}
 🚕 مواصلات: ${transport}
 🏠 إيجار: ${rent}
 
-💰 الإجمالي: ${total}`
-    });
+💰 الإجمالي: ${total}
+
+📈 النسب:
+🍔 ${((food/total)*100).toFixed(1)}%
+🚕 ${((transport/total)*100).toFixed(1)}%
+🏠 ${((rent/total)*100).toFixed(1)}%`;
+
+    await bot.sendPhoto(chatId, image, { caption });
 }
 
 module.exports = generateChart;
