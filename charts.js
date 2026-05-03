@@ -1,14 +1,16 @@
 const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
 const { registerFont } = require("canvas");
+const ChartDataLabels = require("chartjs-plugin-datalabels");
 const db = require("./db");
 
 // تسجيل الخط العربي
 registerFont("./fonts/Cairo-Regular.ttf", { family: "Cairo" });
 
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
-    width: 500,
-    height: 500,
+    width: 600,
+    height: 600,
     chartCallback: (ChartJS) => {
+        ChartJS.register(ChartDataLabels);
         ChartJS.defaults.font.family = "Cairo";
         ChartJS.defaults.font.size = 16;
     }
@@ -29,6 +31,12 @@ async function generateChart(chatId, bot) {
         else if (r.category === "rent") rent += amount;
     });
 
+    const total = food + transport + rent;
+
+    if (total === 0) {
+        return bot.sendMessage(chatId, "مفيش بيانات لسه 📭");
+    }
+
     const config = {
         type: "pie",
         data: {
@@ -41,11 +49,23 @@ async function generateChart(chatId, bot) {
         options: {
             plugins: {
                 legend: {
+                    position: "bottom",
                     labels: {
                         font: {
                             family: "Cairo",
                             size: 16
                         }
+                    }
+                },
+                datalabels: {
+                    color: "#fff",
+                    font: {
+                        weight: "bold",
+                        size: 18
+                    },
+                    formatter: (value) => {
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return value > 0 ? value + " (" + percentage + "%)" : "";
                     }
                 }
             }
