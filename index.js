@@ -33,56 +33,52 @@ bot.on("message", (msg) => {
     else if (text.includes("ايجار")) category = "rent";
 
     db.prepare(
-    "INSERT INTO expenses (amount, category, text) VALUES (?, ?, ?)"
-).run(amount, category, text);
-    );
+        "INSERT INTO expenses (amount, category, text) VALUES (?, ?, ?)"
+    ).run(amount, category, text);
 
     bot.sendMessage(chatId, `تم تسجيل 💰 ${amount} في ${category}`);
 });
 
 function sendReport(chatId) {
-    db.all("SELECT * FROM expenses", [], (err, rows) => {
-        if (err) return;
+    const rows = db.prepare("SELECT * FROM expenses").all();
 
-        let total = 0;
-        let food = 0;
-        let transport = 0;
-        let rent = 0;
+    let total = 0;
+    let food = 0;
+    let transport = 0;
+    let rent = 0;
 
-        rows.forEach(r => {
-            total += r.amount;
-            if (r.category === "food") food += r.amount;
-            if (r.category === "transport") transport += r.amount;
-            if (r.category === "rent") rent += r.amount;
-        });
+    rows.forEach(r => {
+        total += r.amount;
+        if (r.category === "food") food += r.amount;
+        if (r.category === "transport") transport += r.amount;
+        if (r.category === "rent") rent += r.amount;
+    });
 
-        bot.sendMessage(chatId,
+    bot.sendMessage(chatId,
 `📊 التقرير:
 💰 إجمالي: ${total}
 🍔 أكل: ${food}
 🚕 مواصلات: ${transport}
 🏠 إيجار: ${rent}`);
-    });
 }
 
-function exportExcel(chatId) {
+async function exportExcel(chatId) {
     const rows = db.prepare("SELECT * FROM expenses").all();
 
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("Expenses");
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Expenses");
 
-        sheet.columns = [
-            { header: "Amount", key: "amount" },
-            { header: "Category", key: "category" },
-            { header: "Text", key: "text" },
-            { header: "Date", key: "date" },
-        ];
+    sheet.columns = [
+        { header: "Amount", key: "amount" },
+        { header: "Category", key: "category" },
+        { header: "Text", key: "text" },
+        { header: "Date", key: "date" },
+    ];
 
-        rows.forEach(r => sheet.addRow(r));
+    rows.forEach(r => sheet.addRow(r));
 
-        const file = "expenses.xlsx";
-        await workbook.xlsx.writeFile(file);
+    const file = "expenses.xlsx";
+    await workbook.xlsx.writeFile(file);
 
-        bot.sendMessage(chatId, "تم تجهيز Excel 📁");
-    });
+    bot.sendMessage(chatId, "تم تجهيز Excel 📁");
 }
