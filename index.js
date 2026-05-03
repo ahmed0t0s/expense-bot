@@ -1,7 +1,7 @@
-const generateChart = require("./charts");
 const TelegramBot = require("node-telegram-bot-api");
 const db = require("./db");
 const ExcelJS = require("exceljs");
+const generateChart = require("./charts");
 
 const TOKEN = process.env.TOKEN;
 
@@ -11,7 +11,7 @@ console.log("Bot started...");
 
 bot.on("message", (msg) => {
     const chatId = msg.chat.id;
-    const text = msg.text.toLowerCase();
+    const text = (msg.text || "").toLowerCase();
 
     // 📊 انفوجراف
     if (text.includes("انفوجراف") || text.includes("chart")) {
@@ -40,9 +40,10 @@ bot.on("message", (msg) => {
     else if (text.includes("اكل") || text.includes("أكل")) category = "food";
     else if (text.includes("ايجار")) category = "rent";
 
-    db.prepare(
+    const stmt = db.prepare(
         "INSERT INTO expenses (amount, category, text) VALUES (?, ?, ?)"
-    ).run(amount, category, text);
+    );
+    stmt.run(amount, category, text);
 
     bot.sendMessage(chatId, `تم تسجيل 💰 ${amount} في ${category}`);
 });
