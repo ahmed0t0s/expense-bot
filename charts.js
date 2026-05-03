@@ -21,18 +21,16 @@ async function generateChart(chatId, bot) {
         else if (r.category === "rent") rent += amount;
     });
 
-    if (food + transport + rent === 0) {
-        return bot.sendMessage(chatId, "مفيش بيانات لسه 📭");
+    const total = food + transport + rent;
+
+    if (total === 0) {
+        return bot.sendMessage(chatId, "مفيش بيانات مصاريف لسه 📭");
     }
 
     const config = {
         type: "pie",
         data: {
-            labels: [
-                `🍔 Food: ${food}`,
-                `🚕 Transport: ${transport}`,
-                `🏠 Rent: ${rent}`
-            ],
+            labels: ["Food", "Transport", "Rent"],
             datasets: [{
                 data: [food, transport, rent]
             }]
@@ -48,11 +46,16 @@ async function generateChart(chatId, bot) {
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
+    // 📊 هنا الأرقام تظهر بشكل مضمون (مش داخل الرسم)
     await bot.sendPhoto(chatId, image, {
-        caption: `📊 المصاريف:
-🍔 أكل: ${food}
-🚕 مواصلات: ${transport}
-🏠 إيجار: ${rent}`
+        caption:
+`📊 تقرير المصاريف:
+
+🍔 أكل: ${food} (${((food/total)*100).toFixed(1)}%)
+🚕 مواصلات: ${transport} (${((transport/total)*100).toFixed(1)}%)
+🏠 إيجار: ${rent} (${((rent/total)*100).toFixed(1)}%)
+
+💰 الإجمالي: ${total}`
     });
 }
 
