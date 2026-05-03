@@ -1,9 +1,17 @@
 const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
+const { registerFont } = require("canvas");
 const db = require("./db");
 
+// تسجيل الخط العربي
+registerFont("./fonts/Cairo-Regular.ttf", { family: "Cairo" });
+
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
-    width: 600,
-    height: 400
+    width: 500,
+    height: 500,
+    chartCallback: (ChartJS) => {
+        ChartJS.defaults.font.family = "Cairo";
+        ChartJS.defaults.font.size = 16;
+    }
 });
 
 async function generateChart(chatId, bot) {
@@ -21,17 +29,10 @@ async function generateChart(chatId, bot) {
         else if (r.category === "rent") rent += amount;
     });
 
-    const total = food + transport + rent;
-
-    if (total === 0) {
-        return bot.sendMessage(chatId, "مفيش بيانات مصاريف لسه 📭");
-    }
-
-    // 📊 الرسم (بدون أرقام)
     const config = {
-        type: "bar",
+        type: "pie",
         data: {
-            labels: ["Food", "Transport", "Rent"],
+            labels: ["🍔 أكل", "🚕 مواصلات", "🏠 إيجار"],
             datasets: [{
                 data: [food, transport, rent],
                 backgroundColor: ["#ff6384", "#36a2eb", "#ffce56"]
@@ -39,32 +40,23 @@ async function generateChart(chatId, bot) {
         },
         options: {
             plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: { beginAtZero: true }
+                legend: {
+                    labels: {
+                        font: {
+                            family: "Cairo",
+                            size: 16
+                        }
+                    }
+                }
             }
         }
     };
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
 
-    // 📱 الأرقام هنا (مضمون 100%)
-    const caption =
-`📊 المصاريف:
-
-🍔 أكل: ${food}
-🚕 مواصلات: ${transport}
-🏠 إيجار: ${rent}
-
-💰 الإجمالي: ${total}
-
-📈 النسب:
-🍔 ${((food/total)*100).toFixed(1)}%
-🚕 ${((transport/total)*100).toFixed(1)}%
-🏠 ${((rent/total)*100).toFixed(1)}%`;
-
-    await bot.sendPhoto(chatId, image, { caption });
+    await bot.sendPhoto(chatId, image, {
+        caption: "📊 توزيع المصاريف"
+    });
 }
 
 module.exports = generateChart;
