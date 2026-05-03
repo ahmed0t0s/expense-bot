@@ -1,29 +1,6 @@
-const db = require("./db");
-const ExcelJS = require("exceljs");
-async function exportExcel(chatId) {
-    db.all("SELECT * FROM expenses", async (err, rows) => {
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("Expenses");
-
-        sheet.columns = [
-            { header: "Amount", key: "amount" },
-            { header: "Category", key: "category" },
-            { header: "Text", key: "text" },
-            { header: "Date", key: "date" },
-        ];
-
-        rows.forEach(r => sheet.addRow(r));
-
-        const file = "expenses.xlsx";
-        await workbook.xlsx.writeFile(file);
-
-        bot.sendMessage(chatId, "تم تجهيز Excel 📁");
-    });
-}
-
-
 const TelegramBot = require("node-telegram-bot-api");
 const db = require("./db");
+const ExcelJS = require("exceljs");
 
 const TOKEN = process.env.TOKEN;
 
@@ -31,19 +8,18 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 console.log("Bot started...");
 
-// تسجيل مصاريف
 bot.on("message", (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text.toLowerCase();
-if (text.includes("excel")) {
-    return exportExcel(chatId);
-}
-    // أوامر
+
+    if (text.includes("excel")) {
+        return exportExcel(chatId);
+    }
+
     if (text.includes("تقرير")) {
         return sendReport(chatId);
     }
 
-    // استخراج رقم
     const amountMatch = text.match(/\d+/);
     if (!amountMatch) {
         return bot.sendMessage(chatId, "اكتب: دفعت 200 بنزين");
@@ -51,7 +27,6 @@ if (text.includes("excel")) {
 
     const amount = parseInt(amountMatch[0]);
 
-    // تصنيف
     let category = "other";
     if (text.includes("بنزين")) category = "transport";
     else if (text.includes("اكل") || text.includes("أكل")) category = "food";
@@ -86,7 +61,29 @@ function sendReport(chatId) {
 💰 إجمالي: ${total}
 🍔 أكل: ${food}
 🚕 مواصلات: ${transport}
-🏠 إيجار: ${rent}`
-        );
+🏠 إيجار: ${rent}`);
+    });
+}
+
+function exportExcel(chatId) {
+    db.all("SELECT * FROM expenses", [], async (err, rows) => {
+        if (err) return;
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet("Expenses");
+
+        sheet.columns = [
+            { header: "Amount", key: "amount" },
+            { header: "Category", key: "category" },
+            { header: "Text", key: "text" },
+            { header: "Date", key: "date" },
+        ];
+
+        rows.forEach(r => sheet.addRow(r));
+
+        const file = "expenses.xlsx";
+        await workbook.xlsx.writeFile(file);
+
+        bot.sendMessage(chatId, "تم تجهيز Excel 📁");
     });
 }
