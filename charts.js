@@ -1,14 +1,9 @@
 const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
-const ChartDataLabels = require("chartjs-plugin-datalabels");
 const db = require("./db");
 
-const width = 500;
-const height = 500;
-
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
-    width,
-    height,
-    plugins: [ChartDataLabels]
+    width: 500,
+    height: 500
 });
 
 async function generateChart(chatId, bot) {
@@ -26,27 +21,29 @@ async function generateChart(chatId, bot) {
         else if (r.category === "rent") rent += amount;
     });
 
+    if (food + transport + rent === 0) {
+        return bot.sendMessage(chatId, "مفيش بيانات لسه 📭");
+    }
+
     const config = {
         type: "pie",
         data: {
-            labels: ["🍔 Food", "🚕 Transport", "🏠 Rent"],
+            labels: [
+                `🍔 Food: ${food}`,
+                `🚕 Transport: ${transport}`,
+                `🏠 Rent: ${rent}`
+            ],
             datasets: [{
                 data: [food, transport, rent]
             }]
         },
         options: {
             plugins: {
-                datalabels: {
-                    color: "#fff",
-                    font: {
-                        weight: "bold",
-                        size: 16
-                    },
-                    formatter: (value) => value > 0 ? value : ""
+                legend: {
+                    display: true
                 }
             }
-        },
-        plugins: [ChartDataLabels]
+        }
     };
 
     const image = await chartJSNodeCanvas.renderToBuffer(config);
