@@ -1,3 +1,4 @@
+const generateChart = require("./charts");
 const TelegramBot = require("node-telegram-bot-api");
 const db = require("./db");
 const ExcelJS = require("exceljs");
@@ -12,10 +13,17 @@ bot.on("message", (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text.toLowerCase();
 
+    // 📊 انفوجراف
+    if (text.includes("انفوجراف") || text.includes("chart")) {
+        return generateChart(chatId, bot);
+    }
+
+    // 📁 Excel
     if (text.includes("excel")) {
         return exportExcel(chatId);
     }
 
+    // 📊 تقرير
     if (text.includes("تقرير")) {
         return sendReport(chatId);
     }
@@ -39,6 +47,7 @@ bot.on("message", (msg) => {
     bot.sendMessage(chatId, `تم تسجيل 💰 ${amount} في ${category}`);
 });
 
+// 📊 تقرير
 function sendReport(chatId) {
     const rows = db.prepare("SELECT * FROM expenses").all();
 
@@ -62,6 +71,7 @@ function sendReport(chatId) {
 🏠 إيجار: ${rent}`);
 }
 
+// 📁 Excel
 async function exportExcel(chatId) {
     const rows = db.prepare("SELECT * FROM expenses").all();
 
