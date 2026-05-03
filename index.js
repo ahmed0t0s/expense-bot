@@ -1,36 +1,16 @@
-const express = require("express");
-const axios = require("axios");
+const TelegramBot = require('node-telegram-bot-api');
 
-const app = express();
-app.use(express.json());
-
-// حط التوكن بتاعك هنا
 const TOKEN = process.env.TOKEN;
 
-// استقبال الرسائل
-app.post(`/webhook/${TOKEN}`, async (req, res) => {
-    const message = req.body.message;
+const bot = new TelegramBot(TOKEN, { polling: true });
 
-    if (!message || !message.text) {
-        return res.sendStatus(200);
-    }
+console.log("Bot started...");
 
-    const chatId = message.chat.id;
-    const text = message.text;
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
 
     console.log("Message:", text);
 
-    await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-        chat_id: chatId,
-        text: `استلمت: ${text}`
-    });
-
-    res.sendStatus(200);
-});
-
-// تشغيل السيرفر
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log("Server running on port", PORT);
+    bot.sendMessage(chatId, "استلمت: " + text);
 });
