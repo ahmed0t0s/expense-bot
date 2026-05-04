@@ -135,42 +135,103 @@ app.get("/dashboard/:id", (req, res) => {
     const total = food + transport + rent;
 
     res.send(`
-<html>
+<!DOCTYPE html>
+<html lang="ar">
 <head>
+<meta charset="UTF-8">
 <title>Dashboard</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body{font-family:Arial;text-align:center;background:#f4f4f4}
-.box{display:inline-block;margin:10px;padding:15px;background:#fff;border-radius:10px}
+body {
+    margin:0;
+    font-family: Arial;
+    background:#0f172a;
+    color:white;
+}
+
+.header {
+    padding:20px;
+    text-align:center;
+    font-size:24px;
+    font-weight:bold;
+}
+
+.container {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap:15px;
+    padding:20px;
+}
+
+.card {
+    background:#1e293b;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 5px 15px rgba(0,0,0,0.3);
+}
+
+.card h2 {
+    margin:10px 0;
+}
+
+.total {
+    background:#22c55e;
+    color:black;
+}
+
+.chart-box {
+    width:90%;
+    max-width:500px;
+    margin:20px auto;
+    background:#1e293b;
+    padding:20px;
+    border-radius:15px;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>📊 Dashboard</h1>
+<div class="header">📊 لوحة التحكم</div>
 
-<div class="box">🍔 ${food}</div>
-<div class="box">🚕 ${transport}</div>
-<div class="box">🏠 ${rent}</div>
-<div class="box">💰 ${total}</div>
+<div class="container">
+    <div class="card">🍔<h2>${food}</h2><p>أكل</p></div>
+    <div class="card">🚕<h2>${transport}</h2><p>مواصلات</p></div>
+    <div class="card">🏠<h2>${rent}</h2><p>إيجار</p></div>
+    <div class="card total">💰<h2>${total}</h2><p>الإجمالي</p></div>
+</div>
 
-<canvas id="c"></canvas>
+<div class="chart-box">
+    <canvas id="chart"></canvas>
+</div>
 
 <script>
-new Chart(document.getElementById("c"),{
-type:"pie",
-data:{
-labels:["Food","Transport","Rent"],
-datasets:[{data:[${food},${transport},${rent}]}]
-}
+new Chart(document.getElementById("chart"), {
+    type: "doughnut",
+    data: {
+        labels: ["Food", "Transport", "Rent"],
+        datasets: [{
+            data: [${food}, ${transport}, ${rent}],
+            backgroundColor: ["#f43f5e", "#3b82f6", "#facc15"]
+        }]
+    },
+    options: {
+        plugins: {
+            legend: {
+                labels: {
+                    color: "white"
+                }
+            }
+        }
+    }
 });
 </script>
 
 </body>
 </html>
-`);
-});
-
-app.listen(PORT, () => {
-    console.log("Server running...");
+    `);
 });
