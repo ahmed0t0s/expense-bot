@@ -22,7 +22,6 @@ import matplotlib.gridspec as gridspec
 
 import arabic_reshaper
 from bidi.algorithm import get_display
-import google.generativeai as genai
 
 TELEGRAM_TOKEN   = os.getenv('TELEGRAM_TOKEN')
 GEMINI_API_KEY   = os.getenv('GEMINI_API_KEY')
@@ -37,8 +36,6 @@ SCOPES     = ['Files.ReadWrite', 'offline_access']
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-genai.configure(api_key=GEMINI_API_KEY)
-gemini = genai.GenerativeModel('gemini-1.5-flash-latest')
 _refresh_token = MS_REFRESH_TOKEN
 
 CATEGORIES = {
@@ -173,7 +170,7 @@ def fetch_expenses():
              'subcategory':str(r[4] or ''),'notes':str(r[5] or ''),'month':str(r[6] or '')}
             for r in ws.iter_rows(min_row=2,values_only=True) if r[0] and r[2]]
 
-# ── AI Parsing (Gemini Free) ──────────────────────
+# ── AI Parsing (Gemini Free - Direct HTTP) ────────
 def parse_expense_ai(text):
     cats = ', '.join(CATEGORIES.keys())
     prompt = f"""أنت مساعد لتحليل رسائل المصاريف باللغة العربية.
@@ -182,8 +179,13 @@ def parse_expense_ai(text):
 أرجع JSON فقط بدون markdown:
 إذا مصروف: {{"is_expense":true,"amount":رقم,"category":"فئة","subcategory":"وصف","notes":"ملاحظة"}}
 إذا لا: {{"is_expense":false}}"""
-    resp = gemini.generate_content(prompt)
-    raw  = resp.text.strip().replace('```json','').replace('```','').strip()
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    resp = requests.post(url, json=payload)
+    resp.raise_for_status()
+    raw = resp.json()['candidates'][0]['content']['parts'][0]['text']
+    raw = raw.strip().replace('```json','').replace('```','').strip()
     return json.loads(raw)
 
 # ── Report Generation ─────────────────────────────
