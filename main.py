@@ -38,7 +38,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=lo
 logger = logging.getLogger(__name__)
 
 genai.configure(api_key=GEMINI_API_KEY)
-gemini = genai.GenerativeModel('gemini-1.5-flash')
+gemini = genai.GenerativeModel('gemini-1.5-flash-latest')
 _refresh_token = MS_REFRESH_TOKEN
 
 CATEGORIES = {
