@@ -9,6 +9,9 @@ const generateChart = require("./charts");
 const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.TOKEN;
 
+// 👇 حط اللينك بتاع Railway هنا
+const BASE_URL = "https://expense-bot-production-74ac.up.railway.app";
+
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 console.log("Bot started...");
@@ -30,18 +33,39 @@ bot.on("message", (msg) => {
 
     const userId = user.id;
 
+    // 📊 زرار الداشبورد
+    if (text.includes("داشبورد")) {
+        const url = `${BASE_URL}/dashboard/${userId}`;
+
+        return bot.sendMessage(chatId,
+`📊 داشبورد المصاريف
+
+اضغط الزرار 👇`,
+        {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "📊 فتح الداشبورد", url: url }]
+                ]
+            }
+        });
+    }
+
+    // 📊 انفوجراف
     if (text.includes("انفوجراف")) {
         return generateChart(chatId, bot, userId);
     }
 
+    // 📁 Excel
     if (text.includes("excel")) {
         return exportExcel(chatId, userId);
     }
 
+    // 📊 تقرير
     if (text.includes("تقرير")) {
         return sendReport(chatId, userId);
     }
 
+    // تسجيل مصاريف
     const amountMatch = text.match(/\d+/);
     if (!amountMatch) {
         return bot.sendMessage(chatId, "اكتب: دفعت 200 بنزين");
@@ -106,9 +130,10 @@ async function exportExcel(chatId, userId) {
 
     rows.forEach(r => sheet.addRow(r));
 
-    await workbook.xlsx.writeFile("expenses.xlsx");
+    const file = "expenses.xlsx";
+    await workbook.xlsx.writeFile(file);
 
-    bot.sendMessage(chatId, "📁 Excel جاهز");
+    await bot.sendDocument(chatId, file);
 }
 
 // ================= WEB =================
@@ -149,11 +174,11 @@ body {
     font-family: Arial;
     background:#0f172a;
     color:white;
+    text-align:center;
 }
 
 .header {
     padding:20px;
-    text-align:center;
     font-size:24px;
     font-weight:bold;
 }
@@ -169,12 +194,6 @@ body {
     background:#1e293b;
     padding:20px;
     border-radius:15px;
-    text-align:center;
-    box-shadow:0 5px 15px rgba(0,0,0,0.3);
-}
-
-.card h2 {
-    margin:10px 0;
 }
 
 .total {
@@ -182,15 +201,9 @@ body {
     color:black;
 }
 
-.chart-box {
-    width:90%;
-    max-width:500px;
-    margin:20px auto;
-    background:#1e293b;
-    padding:20px;
-    border-radius:15px;
+canvas {
+    margin-top:20px;
 }
-
 </style>
 </head>
 
@@ -205,9 +218,7 @@ body {
     <div class="card total">💰<h2>${total}</h2><p>الإجمالي</p></div>
 </div>
 
-<div class="chart-box">
-    <canvas id="chart"></canvas>
-</div>
+<canvas id="chart" width="300" height="300"></canvas>
 
 <script>
 new Chart(document.getElementById("chart"), {
@@ -218,15 +229,6 @@ new Chart(document.getElementById("chart"), {
             data: [${food}, ${transport}, ${rent}],
             backgroundColor: ["#f43f5e", "#3b82f6", "#facc15"]
         }]
-    },
-    options: {
-        plugins: {
-            legend: {
-                labels: {
-                    color: "white"
-                }
-            }
-        }
     }
 });
 </script>
@@ -234,4 +236,8 @@ new Chart(document.getElementById("chart"), {
 </body>
 </html>
     `);
+});
+
+app.listen(PORT, () => {
+    console.log("Server running on port", PORT);
 });
